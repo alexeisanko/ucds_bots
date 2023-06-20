@@ -16,3 +16,5 @@ class PayState(StatesGroup):
 class ActivityState(StatesGroup):
     waiting_video_activity = State()
     change_activity = State()
+    waiting_time_activity = State()
+    waiting_period_activity = State()

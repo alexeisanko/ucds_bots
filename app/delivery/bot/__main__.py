@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
@@ -26,6 +25,7 @@ async def _set_bot_commands() -> None:
         [
             BotCommand(command="/start", description="Зарегестрироваться"),
             BotCommand(command="/info", description="Информация о боте"),
+            BotCommand(command="/cansel", description="Отмена"),
         ]
     )
 
@@ -34,7 +34,6 @@ async def _set_bot_commands() -> None:
 async def on_startup() -> None:
     # Register all routers
     _register_routers()
-
     # Set default commands
     await _set_bot_commands()
 
