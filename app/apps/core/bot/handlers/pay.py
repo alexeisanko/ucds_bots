@@ -24,7 +24,8 @@ router = Router()
 async def balance_replenishment(message: Message, state: FSMContext) -> None:
     if message.from_user is None:
         return
-    await message.answer("Введите сумму кратную 10", reply_markup=BasicButtons.cancel())
+    await message.answer("Введите сумму кратную 10 от 500 до 1000 рублей(500,600,700,800,900,1000)",
+                         reply_markup=BasicButtons.cancel())
     await state.set_state(PayState.waiting_input)
 
 
@@ -35,11 +36,11 @@ async def waiting_input_pay(message: Message, state: FSMContext) -> None:
     try:
         count = int(message.text)
     except ValueError:
-        await message.answer("Что то ты ввел какую то фигню, нужно число кратное 10 (например, 500)", reply_markup=BasicButtons.cancel())
+        await message.answer("Нужно ввести число! от 500 до 1000, кратное 100", reply_markup=BasicButtons.cancel())
         return
-    if count % 10 == 0:
+    if count % 100 == 0 and 500 <= count <= 1000:
         yoomoney, label, payment_link = get_link(message, count)
-        await message.answer(f"Ссылка на оплату действительна 1 минуту!\n"
+        await message.answer(f"Ссылка на оплату действительна 5 минут!\n"
                              f"Во время ожидания оплаты все функции недоступны\n{payment_link}")
         is_paid = payment_processing(yoomoney, label)
         user = await CORE_USE_CASE.get_bot_user(message.from_user.id)
@@ -58,10 +59,11 @@ async def waiting_input_pay(message: Message, state: FSMContext) -> None:
                 await user.asave()
                 buttons = await CORE_USE_CASE.get_activities()
                 CALLBACK_SELECT[message.from_user.id] = set()
-                await message.answer("Поздравляю с регистрацией, теперь давай мы выберим активности которые будем соблюдать",
-                                     reply_markup=BasicButtons.confirmation())
                 await message.answer(
-                    "Вот какие есть активности",
+                    "Поздравляю с регистрацией,пожалуйста выбери полезные привычки которые ты будешь соблюдать",
+                    reply_markup=BasicButtons.confirmation())
+                await message.answer(
+                    "Можно несколько,а можно всего одну",
                     reply_markup=Action.choice_activity(buttons))
                 await state.set_state(ActivityState.change_activity)
         else:
@@ -76,7 +78,9 @@ async def waiting_input_pay(message: Message, state: FSMContext) -> None:
                                      reply_markup=MainMenuButtons.add_balance())
                 await state.clear()
     else:
-        await message.answer("Что то ты ввел какую то фигню, нужно число типо 10", reply_markup=BasicButtons.cancel())
+        await message.answer(
+            "Можно вносить от 500 до 1000 рублей и сумма должна быть кратноя 100 (500, 600, 700, 800, 900, 1000",
+            reply_markup=BasicButtons.cancel())
 
 
 def get_link(message: Message, count: int) -> tuple:

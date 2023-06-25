@@ -5,6 +5,7 @@ from aiogram.types import BotCommand
 
 from app.apps.core.bot.handlers import prepare_router
 from app.config.bot import RUNNING_MODE, TG_TOKEN, RunningMode
+from app.apps.core.bot.middleware import scheduler
 
 bot = Bot(TG_TOKEN, parse_mode="HTML")
 
@@ -28,7 +29,6 @@ async def _set_bot_commands() -> None:
             BotCommand(command="/cansel", description="Отмена"),
         ]
     )
-
 
 @dispatcher.startup()
 async def on_startup() -> None:

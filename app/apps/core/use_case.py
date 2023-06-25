@@ -35,7 +35,7 @@ class CoreUseCase:
     async def get_activities() -> list[dict]:
         buttons_activity = []
         async for activity in Activity.objects.filter(is_active=True):
-            name = activity.name
+            name: str = activity.name
             buttons_activity.append({'text': name, 'callback_data': name})
         return buttons_activity
 
@@ -48,13 +48,13 @@ class CoreUseCase:
         return
 
     @staticmethod
-    async def save_period_activity_user(period_day: int, user_id: int) -> None:
+    async def save_period_activity_user(period_day: int, user_id: int) -> datetime.date:
         current_date = datetime.date.today()
         finish_tracking = current_date + datetime.timedelta(days=period_day)
         user = await TGUser.objects.aget(id=user_id)
         period_activity_user = TrackingTime(user=user, period=finish_tracking)
         await period_activity_user.asave()
-        return
+        return finish_tracking
 
     @staticmethod
     @sync_to_async
@@ -99,6 +99,13 @@ class CoreUseCase:
         period_activity = TrackingTime.objects.get(user=user).period
         now_date = datetime.datetime.now().date()
         return (False, period_activity) if period_activity > now_date else (True, period_activity)
+
+    @staticmethod
+    @sync_to_async
+    def delete_activity(user_id: int) -> None:
+        user = TGUser.objects.get(id=user_id)
+        TrackedActivity.objects.filter(user=user).delete()
+        TrackingTime.objects.filter(user=user).delete()
 
 
 # Alternative: use a DI middleware to inject the use case into the handler.

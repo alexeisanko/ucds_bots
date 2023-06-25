@@ -12,10 +12,13 @@ class Action(CallbackData, prefix="text"):
     action: str
 
     @staticmethod
-    def choice_activity(btns: List[Dict[str, str]], select: Optional[bool | Set[str]] = False) -> InlineKeyboardMarkup:
+    def choice_activity(btns: List[Dict[str, str]], select: Optional[Dict[str, bool]] = False) -> InlineKeyboardMarkup:
         schema = [1] * len(btns)
+        print(btns)
+        print(select)
         if select:
             for btn in btns:
-                if btn['text'] in select:
+                if select[btn['text']]:
+                    # if btn['text'] in select:
                     btn['text'] = f"✅ {btn['text']}"
         return InlineConstructor._create_kb(btns, schema)
