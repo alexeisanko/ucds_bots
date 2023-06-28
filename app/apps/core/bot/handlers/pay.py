@@ -24,7 +24,7 @@ router = Router()
 async def balance_replenishment(message: Message, state: FSMContext) -> None:
     if message.from_user is None:
         return
-    await message.answer("Введите сумму кратную 10 от 500 до 1000 рублей(500,600,700,800,900,1000)",
+    await message.answer("Введите сумму кратную 100 от 500 до 1000 рублей(500,600,700,800,900,1000)",
                          reply_markup=BasicButtons.cancel())
     await state.set_state(PayState.waiting_input)
 
@@ -53,12 +53,13 @@ async def waiting_input_pay(message: Message, state: FSMContext) -> None:
                                      reply_markup=MainMenuButtons.main_menu(add_select_activity=True,
                                                                             add_change_activity=True,
                                                                             add_output_money=True))
+                await state.clear()
             else:
                 user.is_active = True
                 user.balance = user.balance + int(message.text)
                 await user.asave()
                 buttons = await CORE_USE_CASE.get_activities()
-                CALLBACK_SELECT[message.from_user.id] = set()
+                CALLBACK_SELECT[message.from_user.id] = {x['text']: False for x in buttons}
                 await message.answer(
                     "Поздравляю с регистрацией,пожалуйста выбери полезные привычки которые ты будешь соблюдать",
                     reply_markup=BasicButtons.confirmation())
@@ -79,9 +80,27 @@ async def waiting_input_pay(message: Message, state: FSMContext) -> None:
                 await state.clear()
     else:
         await message.answer(
-            "Можно вносить от 500 до 1000 рублей и сумма должна быть кратноя 100 (500, 600, 700, 800, 900, 1000",
+            "Можно вносить от 500 до 1000 рублей и сумма должна быть кратная 100 (500, 600, 700, 800, 900, 1000)",
             reply_markup=BasicButtons.cancel())
 
+
+@router.message(PayState.waiting_output)
+async def waiting_output_pay(message: Message, state: FSMContext) -> None:
+    if message.from_user is None:
+        return
+    try:
+        count = int(message.text)
+    except ValueError:
+        await message.answer("Нужно ввести число, кратное 100", reply_markup=BasicButtons.cancel())
+        return
+    if count % 100 == 0 and 500 <= count <= 1000:
+        await message.answer("Введите номер карты, на которую нужно перевести. Дальше механизм не реализован", reply_markup=BasicButtons.cancel())
+        await state.set_state(PayState.waiting_transfer)
+    else:
+        await message.answer(
+            "выводить можно суммы кратные 100 (500, 600, 10000)",
+            reply_markup=BasicButtons.cancel())
+    
 
 def get_link(message: Message, count: int) -> tuple:
     yoomoney = Client(YOOMONEY_TOKEN)
@@ -91,9 +110,8 @@ def get_link(message: Message, count: int) -> tuple:
 
 
 def payment_processing(yoomoney, label) -> bool:
-    for i in range(60):
+    for i in range(300):
         is_success_pay = _check_pay(yoomoney, label)
-        print(is_success_pay)
         if is_success_pay == 'success':
             return True
         time.sleep(1)

@@ -1,7 +1,7 @@
 import asyncio
 
 from aiogram import Router, Bot
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.config.bot import TG_TOKEN, ID_MESSAGES_CHANNEL, ID_GROUP
 from app.apps.core.bot.keyboards.default.menu import MainMenuButtons
@@ -19,7 +19,7 @@ async def reminder(user_id: int, activity_name: str, state: FSMContext):
         await bot.send_message(user.id, "Там там там. Пришло время очередной активности\n"
                                         f"И это {activity_name}\n"
                                         f"У тебя есть целый час. Присылай кружочек в потдтверждении и я зачту его тебе",
-                               reply_markup=None)
+                               reply_markup=ReplyKeyboardRemove())
         await state.set_state(ActivityState.waiting_video_activity)
         await state.update_data(activity_name=activity_name)
         await asyncio.sleep(3600)
@@ -48,7 +48,8 @@ async def reminder(user_id: int, activity_name: str, state: FSMContext):
 @router.message(ActivityState.waiting_video_activity)
 async def waiting_period(message: Message, state: FSMContext) -> None:
     if message.video_note:
-        await message.answer("Так уж и быть, зачтем на этот раз",
+        await message.answer("Так уж и быть, зачтем на этот раз\n"
+                             "Теперь с чистой совестью можно посмотреть на других на канале https://t.me/ecobalanc",
                              reply_markup=MainMenuButtons.main_menu(add_select_activity=True,
                                                                     add_change_activity=True,
                                                                     add_output_money=True

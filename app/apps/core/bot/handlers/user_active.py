@@ -14,7 +14,7 @@ from app.apps.core.bot.keyboards.default.menu import MainMenuButtons
 from app.apps.core.bot.keyboards.default.basic import BasicButtons
 from app.apps.core.bot.keyboards.inline.callbacks import Action
 from app.apps.core.bot.handlers.tracking import reminder, finish_tracking
-from app.apps.core.bot.states.user import UserActivityState, ActivityState
+from app.apps.core.bot.states.user import UserActivityState, ActivityState, PayState
 
 router = Router()
 router.message.filter(type_user.IsGoodBalance())
@@ -39,7 +39,8 @@ async def user_activities(message: Message) -> None:
 
 @router.message(Text(text='Изменить активности'))
 async def change_activity(message: Message, state: FSMContext):
-    if True:
+    is_can_change, period = await  CORE_USE_CASE.is_can_change_activity(message.from_user.id)
+    if is_can_change:
         buttons = await CORE_USE_CASE.get_activities()
         CALLBACK_SELECT[message.from_user.id] = {x['text']: False for x in buttons}
         await message.answer("Хорошенько подумай, какие ты возьмешь в этот раз",
@@ -102,7 +103,8 @@ async def waiting_period(message: Message, state: FSMContext) -> None:
     if message.text.isdigit():
         end_date = await CORE_USE_CASE.save_period_activity_user(period_day=int(message.text), user_id=message.from_user.id)
         await message.answer("Ура, у тебя получилось!!! теперь я буду следить за тобой в оба глаза \n"
-                             f"Через {message.text} день/дней/дня ты сможешь поменять свои активности \n",
+                             f"Через {message.text} день/дней/дня ты сможешь поменять свои активности \n"
+                             "А еще ты можешь смотреть как справляются остальные на канале https://t.me/ecobalanc",
                              reply_markup=MainMenuButtons.main_menu(add_select_activity=True,
                                                                     add_change_activity=True,
                                                                     add_output_money=True
@@ -132,3 +134,14 @@ async def waiting_period(message: Message, state: FSMContext) -> None:
         scheduler.start()
     else:
         await message.answer('Для особо одаренных... Просто введи число... 1 или 30 или 100')
+        
+        
+@router.message(Text(text='Вывести деньги'))
+async def ouptut_money(message: Message, state: FSMContext):
+    is_can_ouput, period = await  CORE_USE_CASE.is_can_change_activity(message.from_user.id)
+    if is_can_ouput:
+        await message.answer("Введи сумму кратную 100 которую ты хочешь вывести",
+                             reply_markup=BasicButtons.cancel())
+        await state.set_state(PayState.waiting_output)
+    else:
+        await message.answer(f"Можно вывести деньги только после окончания заявленного тобой срока активностей (после {period})")

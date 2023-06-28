@@ -96,7 +96,10 @@ class CoreUseCase:
     @sync_to_async
     def is_can_change_activity(user_id: int) -> tuple[bool, datetime.date]:
         user = TGUser.objects.get(id=user_id)
-        period_activity = TrackingTime.objects.get(user=user).period
+        try:
+            period_activity = TrackingTime.objects.get(user=user).period
+        except:
+            return (True, "30")
         now_date = datetime.datetime.now().date()
         return (False, period_activity) if period_activity > now_date else (True, period_activity)
 
@@ -107,7 +110,28 @@ class CoreUseCase:
         TrackedActivity.objects.filter(user=user).delete()
         TrackingTime.objects.filter(user=user).delete()
 
-
+    @staticmethod
+    @sync_to_async
+    def data_for_reload():
+        data_activity = []
+        activities_user = TrackedActivity.objects.all()
+        for activity in activities_user:
+            end_date = TrackingTime.objects.get(user=activity.user).period
+            data_activity.append([activity.user.id, activity.activity.name, activity.tracking_time, end_date])
+        data_tracking = []
+        tracking_times = TrackingTime.objects.all()
+        for time in tracking_times:
+            data_tracking.append([time.user.id, time.period])
+        return data_activity, data_tracking
+    
+    @staticmethod
+    @sync_to_async
+    def get_users_id_activity():
+        users = TGUser.objects.filter(is_active=True).exclude(id=1)
+        users_id = []
+        for user in users:
+            users_id.append(user.id)
+        return users_id
 # Alternative: use a DI middleware to inject the use case into the handler.
 # To provide DI middleware, you need to use a third-party library.
 # For example, https://github.com/MaximZayats/aiogram-di
