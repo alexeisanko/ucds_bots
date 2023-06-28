@@ -12,4 +12,4 @@ from .group_chat import router as group_router
 
 
 def prepare_router() -> List[Router]:
-    return [group_router, admin_router, basic_router, pay_router, user_active_router, user_not_active_router, tracking_router,  ]
+    return [group_router, basic_router, admin_router, pay_router, user_active_router, user_not_active_router, tracking_router]
