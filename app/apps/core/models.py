@@ -28,7 +28,7 @@ class Activity(models.Model):
 class TrackingTime(models.Model):
     user = models.ForeignKey(TGUser, verbose_name='Пользователь', on_delete=models.CASCADE)
     period = models.DateField(verbose_name='До какого числа отслеживается')
-    mode = models.CharField(verbose_name='Режим')
+    mode = models.CharField(verbose_name='Режим', max_length=10, default='Hard')
     objects: models.manager.BaseManager["TrackingTime"]
 
     class Meta:
