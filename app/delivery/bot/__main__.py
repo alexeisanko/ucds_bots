@@ -41,7 +41,7 @@ async def _set_bot_commands() -> None:
         [
             BotCommand(command="/start", description="Зарегестрироваться"),
             BotCommand(command="/info", description="Информация о боте"),
-            BotCommand(command="/cansel", description="Отмена"),
+            # BotCommand(command="/cancel", description="Отмена"),
         ]
     )
 
@@ -71,10 +71,11 @@ async def start_current_task() -> None:
                                                 chat_id=activity[0],  # если юзер в ЛС, то chat_id=user_id
                                                 user_id=activity[0],
                                                 bot_id=bot.id))
+        days = '*' if activity[4] == 'Hard' else 'mon-fri'
         scheduler.add_job(reminder,
                           'cron',
                           args=(activity[0], activity[1], state_with),
-                          day='*',
+                          day=days,
                           hour=hours,
                           minute=minutes,
                           end_date=activity[3],

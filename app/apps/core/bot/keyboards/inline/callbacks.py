@@ -14,11 +14,17 @@ class Action(CallbackData, prefix="text"):
     @staticmethod
     def choice_activity(btns: List[Dict[str, str]], select: Optional[Dict[str, bool]] = False) -> InlineKeyboardMarkup:
         schema = [1] * len(btns)
-        print(btns)
-        print(select)
         if select:
             for btn in btns:
                 if select[btn['text']]:
                     # if btn['text'] in select:
                     btn['text'] = f"✅ {btn['text']}"
+        return InlineConstructor._create_kb(btns, schema)
+
+    @staticmethod
+    def choice_mode(btns: List[Dict[str, str]], select: str) -> InlineKeyboardMarkup:
+        schema = [1] * len(btns)
+        for btn in btns:
+            if btn['text'] == select:
+                btn['text'] = f"✅ {btn['text']}"
         return InlineConstructor._create_kb(btns, schema)

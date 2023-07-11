@@ -1,4 +1,4 @@
-from typing import Final
+from typing import Final, List
 from asgiref.sync import sync_to_async
 import datetime
 
@@ -48,11 +48,11 @@ class CoreUseCase:
         return
 
     @staticmethod
-    async def save_period_activity_user(period_day: int, user_id: int) -> datetime.date:
+    async def save_period_activity_user(period_day: int, user_id: int, mode: str) -> datetime.date:
         current_date = datetime.date.today()
         finish_tracking = current_date + datetime.timedelta(days=period_day)
         user = await TGUser.objects.aget(id=user_id)
-        period_activity_user = TrackingTime(user=user, period=finish_tracking)
+        period_activity_user = TrackingTime(user=user, period=finish_tracking, mode=mode)
         await period_activity_user.asave()
         return finish_tracking
 
@@ -67,9 +67,14 @@ class CoreUseCase:
     @staticmethod
     @sync_to_async
     def penalty_user(guilty_user: TGUser) -> None:
-        good_user = TGUser.objects.filter(is_active=True).exclude(id=guilty_user.id)
-        add_money = 100 // len(good_user)
-        for user in good_user:
+        good_users: List[TrackingTime] = TrackingTime.objects.filter(user__balance__gte=100).exclude(user=guilty_user)
+        tax = TGUser.objects.get(id=1)
+        tax.balance += 20
+        tax.save()
+        # good_user = TGUser.objects.filter(is_active=True).exclude(id=guilty_user.id)
+        add_money = 80 // len(good_users)
+        for good_user in good_users:
+            user = TGUser.objects.get(id=good_user.user.id)
             user.balance += add_money
             user.save()
         guilty_user.balance -= 100
@@ -116,8 +121,8 @@ class CoreUseCase:
         data_activity = []
         activities_user = TrackedActivity.objects.all()
         for activity in activities_user:
-            end_date = TrackingTime.objects.get(user=activity.user).period
-            data_activity.append([activity.user.id, activity.activity.name, activity.tracking_time, end_date])
+            track = TrackingTime.objects.get(user=activity.user)
+            data_activity.append([activity.user.id, activity.activity.name, activity.tracking_time, track.period, track.mode])
         data_tracking = []
         tracking_times = TrackingTime.objects.all()
         for time in tracking_times:

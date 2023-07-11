@@ -19,6 +19,7 @@ from app.apps.core.bot.states.user import UserActivityState, ActivityState, PayS
 router = Router()
 router.message.filter(type_user.IsGoodBalance())
 CALLBACK_SELECT: Dict[int, Union[Dict[str, bool]] | List] = {}
+SELECT_MODE: Dict[int, str]
 
 
 @router.message(Text(text='Ваш баланс'))
@@ -54,7 +55,8 @@ async def change_activity(message: Message, state: FSMContext):
 
 @router.callback_query(ActivityState.change_activity)
 async def switch_choice_activity(callback: CallbackQuery):
-    CALLBACK_SELECT[callback.from_user.id][callback.data] = False if CALLBACK_SELECT[callback.from_user.id][callback.data] else True
+    CALLBACK_SELECT[callback.from_user.id][callback.data] = False if CALLBACK_SELECT[callback.from_user.id][
+        callback.data] else True
     buttons = await CORE_USE_CASE.get_activities()
     await callback.message.edit_reply_markup(
         reply_markup=Action.choice_activity(buttons, CALLBACK_SELECT[callback.from_user.id]))
@@ -84,24 +86,42 @@ async def waiting_time(message: Message, state: FSMContext):
                 CALLBACK_SELECT[message.from_user.id][i][1] = select_time
                 print(select_time)
                 if not CALLBACK_SELECT[message.from_user.id][-1][1]:
-                    await message.answer(f'Принято. теперь напиши время для активности под названием "{CALLBACK_SELECT[message.from_user.id][i + 1][0]}"')
+                    await message.answer(
+                        f'Принято. теперь напиши время для активности под названием "{CALLBACK_SELECT[message.from_user.id][i + 1][0]}"')
                     return
                 else:
                     select_activities = CALLBACK_SELECT[message.from_user.id]
                     for activity, time in select_activities:
-                        await CORE_USE_CASE.save_activity_user(time=time, activity_name=activity, user_id=message.from_user.id)
+                        await CORE_USE_CASE.save_activity_user(time=time, activity_name=activity,
+                                                               user_id=message.from_user.id)
+                    buttons = [{'text': 'Hard', 'callback_data': 'Hard'}, {'text': 'Lite', 'callback_data': 'Lite'}]
+                    SELECT_MODE[message.from_user.id] = 'Hard'
                     await message.answer(
-                        "Финишная прямая! Укажи период в днях сколько ты будешь придерживаться,тех полезных привычек,которые ты выбрал? (например 90)")
+                        "Финишная прямая! Выбери режим которому ты будешь следовать \n"
+                        "Lite - Выходные это отдых. \n"
+                        "Hard - Буду следить каждый божий день.\n"
+                        "Как определишься, указывай период в днях сколько ты будешь придерживаться,тех полезных привычек,которые ты выбрал (например 90) и начнем веселье",
+                        reply_markup=Action.choice_mode(buttons, SELECT_MODE[message.from_user.id]))
                     await state.set_state(ActivityState.waiting_period_activity)
     else:
         await message.answer("Не корректный формат. Введите время в следующем формате: 15:47")
         return
 
 
+@router.callback_query(ActivityState.waiting_period_activity)
+async def switch_choice_activity(callback: CallbackQuery):
+    buttons = [{'text': 'Hard', 'callback_data': 'Hard'}, {'text': 'Lite', 'callback_data': 'Lite'}]
+    SELECT_MODE[callback.from_user.id] = callback.data
+    await callback.message.edit_reply_markup(
+        reply_markup=Action.choice_mode(buttons, callback.data))
+
+
 @router.message(ActivityState.waiting_period_activity)
 async def waiting_period(message: Message, state: FSMContext) -> None:
     if message.text.isdigit():
-        end_date = await CORE_USE_CASE.save_period_activity_user(period_day=int(message.text), user_id=message.from_user.id)
+        end_date = await CORE_USE_CASE.save_period_activity_user(period_day=int(message.text),
+                                                                 user_id=message.from_user.id,
+                                                                 mode=SELECT_MODE[message.from_user.id])
         await message.answer("Ура, у тебя получилось!!! теперь я буду следить за тобой в оба глаза \n"
                              f"Через {message.text} день/дней/дня ты сможешь поменять свои активности \n"
                              "А еще ты можешь смотреть как справляются остальные на канале https://t.me/ecobalanc",
@@ -114,13 +134,14 @@ async def waiting_period(message: Message, state: FSMContext) -> None:
 
         scheduler = AsyncIOScheduler()
         select_activities = CALLBACK_SELECT[message.from_user.id]
+        days = '*' if SELECT_MODE[message.from_user.id] == 'Hard' else 'mon-fri'
         for activity, time in select_activities:
             hours, minutes = time.split(':')
             time_zone = timezone('Europe/Moscow')
             scheduler.add_job(reminder,
                               'cron',
                               args=(message.from_user.id, activity, state),
-                              day='*',
+                              day=days,
                               hour=hours,
                               minute=minutes,
                               end_date=end_date,
@@ -134,14 +155,15 @@ async def waiting_period(message: Message, state: FSMContext) -> None:
         scheduler.start()
     else:
         await message.answer('Для особо одаренных... Просто введи число... 1 или 30 или 100')
-        
-        
+
+
 @router.message(Text(text='Вывести деньги'))
-async def ouptut_money(message: Message, state: FSMContext):
-    is_can_ouput, period = await  CORE_USE_CASE.is_can_change_activity(message.from_user.id)
-    if is_can_ouput:
+async def output_money(message: Message, state: FSMContext):
+    is_can_output, period = await CORE_USE_CASE.is_can_change_activity(message.from_user.id)
+    if is_can_output:
         await message.answer("Введи сумму кратную 100 которую ты хочешь вывести",
                              reply_markup=BasicButtons.cancel())
         await state.set_state(PayState.waiting_output)
     else:
-        await message.answer(f"Можно вывести деньги только после окончания заявленного тобой срока активностей (после {period})")
+        await message.answer(
+            f"Можно вывести деньги только после окончания заявленного тобой срока активностей (после {period})")

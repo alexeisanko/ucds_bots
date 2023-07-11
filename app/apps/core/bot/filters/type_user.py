@@ -11,7 +11,7 @@ class IsGoodBalance(BaseFilter):
             chat_id=message.chat.id,
             username=message.from_user.username,
         )
-        return True if (user.is_active and user.balance > 0) else False
+        return True if (user.is_active and user.balance >= 100) else False
 
 
 class IsNegativeBalance(BaseFilter):
@@ -21,7 +21,7 @@ class IsNegativeBalance(BaseFilter):
             chat_id=message.chat.id,
             username=message.from_user.username,
         )
-        return True if user.balance <= 0 else False
+        return True if user.balance < 100 else False
 
 
 class IsNotActive(BaseFilter):

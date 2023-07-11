@@ -85,7 +85,7 @@ async def handle_info_command(message: Message) -> None:
     await message.answer(info_message)
 
 
-@router.message(Command(commands=["cansel"]))
+@router.message(Command(commands=["cancel"]))
 @router.message(Text(text='🚫 Отмена'))
 async def handle_info_command(message: Message, state: FSMContext) -> None:
     if message.from_user is None:

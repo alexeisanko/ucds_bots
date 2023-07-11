@@ -10,7 +10,8 @@ router.message.filter(type_user.IsNegativeBalance())
 
 @router.message()
 async def negative_message(message: Message):
-    await message.answer('Ничего тебе не скажу, вначале деньги, потом разговор',
+    await message.answer('Ничего тебе не скажу, вначале деньги, потом разговор\n'
+                         'я работаю когда у меня больше 100 рублей',
                          reply_markup=MainMenuButtons.main_menu(add_select_activity=True,
                                                                 add_change_activity=True,
                                                                 add_output_money=True))
