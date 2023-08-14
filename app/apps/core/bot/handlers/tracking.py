@@ -22,7 +22,7 @@ async def reminder(user_id: int, activity_name: str, state: FSMContext):
                                reply_markup=ReplyKeyboardRemove())
         await state.set_state(ActivityState.waiting_video_activity)
         await state.update_data(activity_name=activity_name)
-        await asyncio.sleep(3600)
+        await asyncio.sleep(3565)
         if await state.get_state() == ActivityState.waiting_video_activity and (await state.get_data()).get('activity_name') == activity_name:
             await bot.send_message(user.id, "Ну дружочек...не успел..или не захотел..или богатый слишком"
                                             f"Я снимаю у тебя 100 рублей и передаю другим участникам за пропуск"

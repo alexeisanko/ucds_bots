@@ -39,7 +39,7 @@ def _setup_middlewares() -> None:
 async def _set_bot_commands() -> None:
     await bot.set_my_commands(
         [
-            BotCommand(command="/start", description="Зарегестрироваться"),
+            BotCommand(command="/start", description="Зарегистрироваться"),
             BotCommand(command="/info", description="Информация о боте"),
             # BotCommand(command="/cancel", description="Отмена"),
         ]
@@ -75,7 +75,8 @@ async def start_current_task() -> None:
         scheduler.add_job(reminder,
                           'cron',
                           args=(activity[0], activity[1], state_with),
-                          day=days,
+                          day='*',
+                          day_of_week=days,
                           hour=hours,
                           minute=minutes,
                           end_date=activity[3],

@@ -23,3 +23,6 @@ class ActivityState(StatesGroup):
     
 class AdminState(StatesGroup):
     waiting_message = State()
+    waiting_user_for_reset_activity = State()
+    waiting_user_for_change_balance = State()
+    waiting_size_balance = State()

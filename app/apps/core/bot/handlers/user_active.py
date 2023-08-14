@@ -19,7 +19,7 @@ from app.apps.core.bot.states.user import UserActivityState, ActivityState, PayS
 router = Router()
 router.message.filter(type_user.IsGoodBalance())
 CALLBACK_SELECT: Dict[int, Union[Dict[str, bool]] | List] = {}
-SELECT_MODE: Dict[int, str]
+SELECT_MODE: Dict[int, str] = {}
 
 
 @router.message(Text(text='Ваш баланс'))
@@ -141,7 +141,8 @@ async def waiting_period(message: Message, state: FSMContext) -> None:
             scheduler.add_job(reminder,
                               'cron',
                               args=(message.from_user.id, activity, state),
-                              day=days,
+                              day='*',
+                              day_of_week=days,
                               hour=hours,
                               minute=minutes,
                               end_date=end_date,

@@ -2,6 +2,7 @@ from typing import Final, List
 from asgiref.sync import sync_to_async
 import datetime
 
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from app.apps.core.models import TGUser, TrackedActivity, TrackingTime, Activity
 
@@ -114,6 +115,35 @@ class CoreUseCase:
         user = TGUser.objects.get(id=user_id)
         TrackedActivity.objects.filter(user=user).delete()
         TrackingTime.objects.filter(user=user).delete()
+
+    @staticmethod
+    @sync_to_async
+    def delete_activity_for_username(username: str) -> bool:
+        if username.startswith('@'):
+            username = username[1:]
+        try:
+            user = TGUser.objects.get(username=username)
+        except ObjectDoesNotExist or MultipleObjectsReturned:
+            return False
+        TrackedActivity.objects.filter(user=user).delete()
+        TrackingTime.objects.filter(user=user).delete()
+        return True
+
+    @staticmethod
+    @sync_to_async
+    def change_balance(data: str) -> bool:
+        username, balance_delta = data.split()
+        if type(username) == str and (str.isdigit(balance_delta) or str.isdigit(f"-{balance_delta}")):
+            if username.startswith('@'):
+                username = username[1:]
+            try:
+                user = TGUser.objects.get(username=username)
+            except ObjectDoesNotExist or MultipleObjectsReturned:
+                return False
+            user.balance += int(balance_delta)
+            return True
+        else:
+            return False
 
     @staticmethod
     @sync_to_async
